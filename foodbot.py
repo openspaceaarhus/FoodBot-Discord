@@ -179,8 +179,9 @@ async def help_command(interaction: disnake.ApplicationCommandInteraction):
         "/clearorder - Remove your order from the current order\n"
         "/help - Show this help message\n"
     )
-    await interaction.user.send(help_text)
+    # Use ephemeral response for the help message to avoid confusion
     await interaction.response.send_message('A list of commands has been sent to your DMs!', ephemeral=True)
+    await interaction.user.send(help_text)  # Send the help text to the user's DM
     print("help command processed")
 
 bot.run(TOKEN)
