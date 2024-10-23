@@ -13,7 +13,7 @@ intents.members = True  # Enable members intent
 
 bot = commands.Bot(command_prefix='!', intents=intents)
 current_order = None
-allowed_channel_name = "madalarm"
+allowed_channel_name = "food-order"
 order_message = None
 
 @bot.event
@@ -54,11 +54,13 @@ async def update_order_message(interaction):
 
 @bot.event
 async def on_message(message):
-    if message.channel.name == allowed_channel_name and current_order is not None:
+    # Check if the message is in a guild (not in a DM) and in the allowed channel
+    if isinstance(message.channel, disnake.TextChannel) and message.channel.name == allowed_channel_name and current_order is not None:
         # Don't delete messages from the bot itself
         if message.author == bot.user:
             return
         await message.delete()
+
 
 @bot.slash_command(name="startorder", description="Start a new food order")
 async def start_order(interaction: disnake.ApplicationCommandInteraction, place: str, time: str):
