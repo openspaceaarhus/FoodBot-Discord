@@ -1,5 +1,6 @@
 # Ignore the .env file
 .env
+FoodBot Discord.code-workspace
 
 # Ignore the virtual environment folder
 .venv/
