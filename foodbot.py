@@ -123,15 +123,14 @@ async def finalize_order(interaction: disnake.ApplicationCommandInteraction):
     if not is_allowed_channel(interaction):
         await interaction.response.send_message(f'This command can only be used in the #{allowed_channel_name} channel.', ephemeral=True)
         return
+    
     global current_order
     if current_order is None:
         await interaction.user.send('No active order to finalize.')
         await interaction.response.send_message('No active order to finalize.', ephemeral=True)
         return
-    if interaction.user.id != current_order['starter']:
-        await interaction.user.send('Only the user who started the order can finalize it.')
-        await interaction.response.send_message('Only the user who started the order can finalize it.', ephemeral=True)
-        return
+    
+    # Removed the check that ensures only the starter can finalize the order
     order_list = []
     for user_id, user_orders in current_order['items'].items():
         member = interaction.guild.get_member(user_id)
@@ -139,11 +138,13 @@ async def finalize_order(interaction: disnake.ApplicationCommandInteraction):
             order_list.append(f'{member.name}: {", ".join(user_orders)}')
         else:
             order_list.append(f'Unknown User ({user_id}): {", ".join(user_orders)}')
+    
     await interaction.user.send(f'Final order list:\n' + '\n'.join(order_list))
     current_order = None
     await update_order_message(interaction)
     await interaction.response.send_message('Order finalized!', ephemeral=True)
     print("end_order command processed")
+
 
 @bot.slash_command(name="clearorder", description="Remove your order from the current order")
 async def clear_order(interaction: disnake.ApplicationCommandInteraction):
@@ -173,11 +174,13 @@ async def clear_order(interaction: disnake.ApplicationCommandInteraction):
 async def help_command(interaction: disnake.ApplicationCommandInteraction):
     print("help command defined")
     help_text = (
-        "/startorder [place] [time] - Start a new food order\n"
-        "/addorder [order] - Add an item to the current order\n"
-        "/endorder - Finalize the current order\n"
-        "/clearorder - Remove your order from the current order\n"
-        "/help - Show this help message\n"
+        "Hello\n"
+        "My name is FoodBot, i help you organize a food order, to use me see my commands below:\n \n"
+        "/startorder [place] [time] - Starts a new food order\n \n"
+        "/addorder [order] - Add an item to the current order\n \n"
+        "/endorder - Finalize the current order\n \n"
+        "/clearorder - Remove your order from the current order\n \n"
+        "/help - Show this help message\n \n"
     )
     # Use ephemeral response for the help message to avoid confusion
     await interaction.response.send_message('A list of commands has been sent to your DMs!', ephemeral=True)
