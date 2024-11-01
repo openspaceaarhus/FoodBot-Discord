@@ -107,13 +107,15 @@ async def add_order(interaction: disnake.ApplicationCommandInteraction, order: s
     await update_order_message(interaction)
     await interaction.response.send_message('Your order has been updated!', ephemeral=True)
 
+final_order_message = None  # Variable to store the finalized order message
+
 @bot.slash_command(name="endorder", description="Finalize the current order")
 async def finalize_order(interaction: disnake.ApplicationCommandInteraction):
     if not is_allowed_channel(interaction):
         await interaction.response.send_message(f'This command can only be used in the #{allowed_channel_name} channel.', ephemeral=True)
         return
     
-    global current_order, last_order_backup
+    global current_order, last_order_backup, final_order_message
     if current_order is None:
         await interaction.user.send('No active order to finalize.')
         await interaction.response.send_message('No active order to finalize.', ephemeral=True)
@@ -122,6 +124,7 @@ async def finalize_order(interaction: disnake.ApplicationCommandInteraction):
     # Backup the current order before finalizing
     last_order_backup = current_order.copy()
 
+    # Prepare the final order list message
     order_list = []
     for user_id, user_orders in current_order['items'].items():
         member = interaction.guild.get_member(user_id)
@@ -130,7 +133,11 @@ async def finalize_order(interaction: disnake.ApplicationCommandInteraction):
         else:
             order_list.append(f'Unknown User ({user_id}): {", ".join(user_orders)}')
     
-    await interaction.user.send(f'Final order list:\n' + '\n'.join(order_list))
+    # Send the final order list to the channel and save the message reference
+    order_list_message = "The following order has been ended:\n" + '\n'.join(order_list)
+    final_order_message = await interaction.channel.send(order_list_message)
+    
+    # Clear the current order
     current_order = None
     await update_order_message(interaction)
     await interaction.response.send_message('Order finalized!', ephemeral=True)
@@ -141,7 +148,7 @@ async def restore_order(interaction: disnake.ApplicationCommandInteraction):
         await interaction.response.send_message(f'This command can only be used in the #{allowed_channel_name} channel.', ephemeral=True)
         return
     
-    global current_order, last_order_backup
+    global current_order, last_order_backup, final_order_message
     if current_order is not None:
         await interaction.response.send_message("An order is already in progress, cannot restore another order.", ephemeral=True)
         return
@@ -150,11 +157,57 @@ async def restore_order(interaction: disnake.ApplicationCommandInteraction):
         await interaction.response.send_message("No order available to restore.", ephemeral=True)
         return
 
+    # Remove the finalized order message if it exists
+    if final_order_message:
+        await final_order_message.delete()
+        final_order_message = None  # Reset the reference
+
     # Restore the last backup
     current_order = last_order_backup
     await update_order_message(interaction)
     await interaction.response.send_message("The previous order has been restored.", ephemeral=True)
 
-# Add your other commands (clearorder, help_command, etc.) here
+@bot.slash_command(name="clearorder", description="Remove your order from the current order")
+async def clear_order(interaction: disnake.ApplicationCommandInteraction):
+    print("clear_order command defined")
+    if not is_allowed_channel(interaction):
+        await interaction.response.send_message(f'This command can only be used in the #{allowed_channel_name} channel.', ephemeral=True)
+        return
+    
+    global current_order
+    if current_order is None:
+        await interaction.user.send('No active order to modify.')
+        await interaction.response.send_message('No active order to modify.', ephemeral=True)
+        return
+    
+    if interaction.user.id not in current_order['items']:
+        await interaction.user.send('You have no items in the current order.')
+        await interaction.response.send_message('You have no items in the current order.', ephemeral=True)
+        return
+    
+    del current_order['items'][interaction.user.id]
+    await update_order_message(interaction)
+    
+    await interaction.response.send_message('Your order has been removed!', ephemeral=True)
+    print("clear_order command processed")
+
+@bot.slash_command(name="help", description="Shows a list of available commands")
+async def help_command(interaction: disnake.ApplicationCommandInteraction):
+    print("help command defined")
+    help_text = (
+        "Hello\n"
+        "My name is FoodBot, i help you organize a food order, to use me see my commands below:\n \n"
+        "/startorder [place] [time] - Starts a new food order\n \n"
+        "/addorder [order] - Add an item to the current order\n \n"
+        "/endorder - Finalize the current order\n \n"
+        "/clearorder - Remove your order from the current order\n \n"
+        "/Restoreorder - Restores the last ended order, if it was ended by mistake\n \n"
+        "/help - Show this help message\n \n"
+    )
+    # Use ephemeral response for the help message to avoid confusion
+    await interaction.response.send_message('A list of commands has been sent to your DMs!', ephemeral=True)
+    await interaction.user.send(help_text)  # Send the help text to the user's DM
+    print("help command processed")
+
 
 bot.run(TOKEN)
