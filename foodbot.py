@@ -43,7 +43,7 @@ async def update_order_message(interaction):
     if current_order is None:
         content = "No active order."
     else:
-        order_list = [f'{interaction.guild.get_member(user_id).name}: {", ".join(user_orders)}' for user_id, user_orders in current_order['items'].items()]
+        order_list = [f'{interaction.guild.get_member(user_id).mention}: {", ".join(user_orders)}' for user_id, user_orders in current_order['items'].items()]
         content = (f'Order in progress by {current_order["username"]}\n \n'
                    f'From: {current_order["place"]} \nOrder before: {current_order["time"]}\n \n'
                    'Use "/addorder [order]" to order your food.\n' f'Current orders: \n' + '\n'.join(order_list))
@@ -52,6 +52,7 @@ async def update_order_message(interaction):
         order_message = await channel.send(content)
     else:
         await order_message.edit(content=content)
+
 
 @bot.event
 async def on_message(message):
@@ -124,12 +125,12 @@ async def finalize_order(interaction: disnake.ApplicationCommandInteraction):
     # Backup the current order before finalizing
     last_order_backup = current_order.copy()
 
-    # Prepare the final order list message
+    # Prepare the final order list message with mentions
     order_list = []
     for user_id, user_orders in current_order['items'].items():
         member = interaction.guild.get_member(user_id)
         if member:
-            order_list.append(f'{member.name}: {", ".join(user_orders)}')
+            order_list.append(f'{member.mention}: {", ".join(user_orders)}')
         else:
             order_list.append(f'Unknown User ({user_id}): {", ".join(user_orders)}')
     
@@ -137,10 +138,14 @@ async def finalize_order(interaction: disnake.ApplicationCommandInteraction):
     order_list_message = "The following order has been ended:\n" + '\n'.join(order_list)
     final_order_message = await interaction.channel.send(order_list_message)
     
+    # Send the finalized order as a DM to the user ending the order
+    await interaction.user.send("Order finalized:\n" + '\n'.join(order_list))
+
     # Clear the current order
     current_order = None
     await update_order_message(interaction)
     await interaction.response.send_message('Order finalized!', ephemeral=True)
+
 
 @bot.slash_command(name="restoreorder", description="Restore the last ended order if it was ended by mistake")
 async def restore_order(interaction: disnake.ApplicationCommandInteraction):
