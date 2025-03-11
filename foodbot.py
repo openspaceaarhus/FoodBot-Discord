@@ -38,23 +38,6 @@ async def clear_and_initialize_channel(channel):
         await message.delete()
     order_message = await channel.send("No active order.")
 
-async def update_order_message(interaction):
-    global order_message
-    channel = interaction.channel
-    if current_order is None:
-        content = "No active order."
-    else:
-        order_list = [f'{interaction.guild.get_member(user_id).mention}: {", ".join(user_orders)}' for user_id, user_orders in current_order['items'].items()]
-        content = (f'Order in progress by {current_order["username"]}\n \n'
-                   f'From: {current_order["place"]} \nOrder before: {current_order["time"]}\n \n'
-                   'Use "/addorder [order]" to order your food.\n' f'Current orders: \n' + '\n'.join(order_list))
-    
-    if order_message is None:
-        order_message = await channel.send(content)
-    else:
-        await order_message.edit(content=content)
-
-
 @bot.event
 async def on_message(message):
     if isinstance(message.channel, disnake.TextChannel) and message.channel.name == allowed_channel_name and current_order is not None:
