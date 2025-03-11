@@ -2,7 +2,8 @@ import os
 import disnake
 from disnake.ext import commands
 from dotenv import load_dotenv
-import datetime
+from datetime import datetime
+import pytz
 
 load_dotenv()
 
@@ -14,6 +15,7 @@ intents.members = True  # Enable members intent
 
 bot = commands.Bot(command_prefix='!', intents=intents)
 current_order = None
+allowed_channel_name = "food-order"
 allowed_channel_name = "food-order"
 order_message = None
 last_order_backup = None  # Backup variable for the last order
@@ -64,7 +66,8 @@ async def start_order(interaction: disnake.ApplicationCommandInteraction, place:
         if message != order_message:
             await message.delete()
 
-    start_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Get current time
+    cet_tz = pytz.timezone("Europe/Copenhagen")
+    start_time = datetime.now(pytz.utc).astimezone(cet_tz).strftime("%Y-%m-%d %H:%M:%S")  # Get current time
 
     current_order = {
         'starter': interaction.user.id, 
