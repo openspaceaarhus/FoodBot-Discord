@@ -2,6 +2,7 @@ import os
 import disnake
 from disnake.ext import commands
 from dotenv import load_dotenv
+import datetime
 
 load_dotenv()
 
@@ -80,16 +81,36 @@ async def start_order(interaction: disnake.ApplicationCommandInteraction, place:
         if message != order_message:
             await message.delete()
 
+    start_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Get current time
+
     current_order = {
         'starter': interaction.user.id, 
         'username': interaction.user.name, 
         'place': place, 
         'time': time, 
+        'start_time': start_time,  # Store start time
         'items': {}
     }
 
     await update_order_message(interaction)
     await interaction.response.send_message('Order started!', ephemeral=True)
+
+async def update_order_message(interaction):
+    global order_message
+    channel = interaction.channel
+    if current_order is None:
+        content = "No active order."
+    else:
+        order_list = [f'{interaction.guild.get_member(user_id).mention}: {", ".join(user_orders)}' for user_id, user_orders in current_order['items'].items()]
+        content = (f'Order in progress by {current_order["username"]}\n \n'
+                   f'From: {current_order["place"]} \nOrder before: {current_order["time"]}\n'
+                   f'Started at: {current_order["start_time"]} \n \n'  # Add start time to the message
+                   'Use "/addorder [order]" to order your food.\n' f'Current orders: \n' + '\n'.join(order_list))
+    
+    if order_message is None:
+        order_message = await channel.send(content)
+    else:
+        await order_message.edit(content=content)
 
 @bot.slash_command(name="addorder", description="Add an item to the current order (will overwrite any previous order)")
 async def add_order(interaction: disnake.ApplicationCommandInteraction, order: str):
