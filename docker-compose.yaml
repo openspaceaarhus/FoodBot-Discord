@@ -1,0 +1,5 @@
+services:
+  foodbot:
+    image: foodbot
+    restart: unless-stopped
+
