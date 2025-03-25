@@ -118,7 +118,7 @@ async def add_order(interaction: disnake.ApplicationCommandInteraction, order: s
 final_order_message = None  # Variable to store the finalized order message
 
 @bot.slash_command(name="endorder", description="Finalize the current order")
-async def finalize_order(interaction: disnake.ApplicationCommandInteraction):
+async def finalize_order(interaction: disnake.ApplicationCommandInteraction, mobilepay: str = None):
     if not is_allowed_channel(interaction):
         await interaction.response.send_message(f'This command can only be used in the #{allowed_channel_name} channel.', ephemeral=True)
         return
@@ -141,12 +141,18 @@ async def finalize_order(interaction: disnake.ApplicationCommandInteraction):
         else:
             order_list.append(f'Unknown User ({user_id}): {", ".join(user_orders)}')
     
-    # Send the final order list to the channel and save the message reference
+    # Construct the final message
     order_list_message = "The following order has been ended:\n" + '\n'.join(order_list)
+    
+    # Add MobilePay details if provided
+    if mobilepay:
+        order_list_message += f"\n\nPlease MobilePay to following number: {mobilepay}"
+
+    # Send the final order list to the channel and save the message reference
     final_order_message = await interaction.channel.send(order_list_message)
     
     # Send the finalized order as a DM to the user ending the order
-    await interaction.user.send("Order finalized:\n" + '\n'.join(order_list))
+    await interaction.user.send("Order finalized:\n" + order_list_message)
 
     # Clear the current order
     current_order = None
